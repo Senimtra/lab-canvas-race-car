@@ -26,6 +26,7 @@ window.onload = () => {
     context.drawImage(carImg, (canvas.width / 2) - 27, canvas.height - 140, 50, 101);
     // ### New player ###
     this.player = new Player();
+    this.obstacles = [];
     // ### Controls object ###
     this.controls = {
       ArrowLeft: { pressed: false },
@@ -43,18 +44,23 @@ window.onload = () => {
         this.controls[event.code].pressed = false;
       }
     });
-    displayRefresh();
+    gameClock();
   }
 
-  function displayRefresh() {
+  function gameClock() {
     // ### Draw and refresh canvas ###
     window.requestAnimationFrame(() => {
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.drawImage(roadImg, 0, 0, canvas.width, canvas.height);
       context.drawImage(carImg, this.player.x, canvas.height - 140, 50, 101);
-      displayRefresh();
+      context.fillStyle = 'darkred';
+      this.obstacles.forEach(obstacle => {
+        context.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      });
+      gameClock();
       checkBoundaries();
       playerMove();
+      obstacleSpawn();
     });
   }
 
@@ -70,12 +76,36 @@ window.onload = () => {
 
   function playerMove() {
     // ### Move player left/right ###
-    if (this.controls['ArrowLeft'].pressed === true) this.player.x -= 2;
-    if (this.controls['ArrowRight'].pressed === true) this.player.x += 2;
+    if (this.controls['ArrowLeft'].pressed === true) this.player.x -= 3;
+    if (this.controls['ArrowRight'].pressed === true) this.player.x += 3;
+  }
+
+  // ###################################
+  // ## Iteration 4: Create obstacles ##
+  // ###################################
+
+  function obstacleSpawn() {
+    // ### Spawn obstacles ###
+    if (Date.now() - this.player.obstacleTimer > 3000) {
+      const obstacle = new Obstacle();
+      // console.log(obstacle);
+      this.obstacles.push(obstacle);
+      this.player.obstacleTimer = Date.now();
+      // console.log(obstacles);
+    }
   }
 };
 
 // ### Player class ###
 class Player {
+  obstacleTimer = Date.now();
   x = (canvas.width / 2) - 27;
+}
+
+// ### Obstacle class ###
+class Obstacle {
+  width = Math.floor(Math.random() * 200 + 150);
+  height = 20;
+  x = Math.floor(Math.random() * (canvas.width - this.width));
+  y = 0;
 }
