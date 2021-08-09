@@ -51,14 +51,17 @@ window.onload = () => {
   function displayRefresh() {
     // ### Draw and refresh canvas ###
     window.requestAnimationFrame(() => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(roadImg, 0, 0, canvas.width, canvas.height);
-      context.drawImage(carImg, this.player.x, canvas.height - 140, 50, 101);
-      context.fillStyle = 'darkred';
-      this.obstacles.forEach(obstacle => {
-        context.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-      });
-      displayRefresh();
+      if (this.player.gamePaused === 0) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(roadImg, 0, 0, canvas.width, canvas.height);
+        context.drawImage(carImg, this.player.x, canvas.height - 140, 50, 101);
+        context.fillStyle = 'darkred';
+        this.obstacles.forEach(obstacle => {
+          context.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        });
+        displayRefresh();
+        drawScore();
+      }
     });
   }
 
@@ -76,6 +79,8 @@ window.onload = () => {
     obstacleSpawn();
     moveObstacles();
     collectGarbage();
+    checkCollision();
+    addScore();
   }
 
   // ###################################################
@@ -124,12 +129,76 @@ window.onload = () => {
       if (obstacle.y > canvas.height) this.obstacles.splice(index, 1);
     });
   }
+
+  // #########################################
+  // ## Iteration 6: Points, points, points ##
+  // #########################################
+
+  function checkCollision() {
+    // ### Check for player obstacle collisions ###
+    this.obstacles.forEach((obstacle, index) => {
+      if (
+        // turns true if right side of element is beyond left side of player
+        obstacle.x + obstacle.width >= this.player.x &&
+        // turns true if left side of element is beyond right side of player
+        obstacle.x <= this.player.x + this.player.width &&
+        // turns true if top edge of element is above bottom edge of player
+        obstacle.y <= this.player.y + this.player.height &&
+        // turns true if bottom side of element is beyond top side of player
+        obstacle.y + obstacle.height >= this.player.y
+      ) gameOver();
+    });
+  }
+
+  function addScore() {
+    // ### Add +1 to player's score every second ###
+    if (Date.now() - player.scoreTimer > 1000) {
+      player.score++;
+      player.scoreTimer = Date.now();
+    }
+  }
+
+  function drawScore() {
+    // ### Draw player's score ###
+    context.save();
+    context.font = 'bold 30px Arial';
+    context.lineWidth = 2;
+    context.fillStyle = 'white';
+    context.fillText(`Score: ${this.player.score}`, 80, 50);
+    context.restore();
+  }
+
+  function gameOver() {
+    // ### Stop game + display game-over-message ###
+    clearInterval(window.clockTimer);
+    this.player.gamePaused = 1;
+    context.save();
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(roadImg, 0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'black';
+    context.fillRect(0, 200, canvas.width, 300);
+    context.fillStyle = 'darkred';
+    context.font = '60px Arial';
+    context.textAlign = 'center';
+    context.fillText('Game Over!', 250, 300);
+    context.fillStyle = 'white';
+    context.font = 'bold 50px Arial';
+    context.fillText('Your final score', 250, 375);
+    context.fillText(this.player.score, 250, 440);
+    context.restore();
+  }
 };
 
 // ### Player class ###
 class Player {
+  gamePaused = 0;
   obstacleTimer = Date.now();
+  scoreTimer = Date.now();
   x = (canvas.width / 2) - 27;
+  y = canvas.height - 140
+  width = 50;
+  height = 101;
+  score = 0;
 }
 
 // ### Obstacle class ###
