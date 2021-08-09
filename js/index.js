@@ -44,10 +44,11 @@ window.onload = () => {
         this.controls[event.code].pressed = false;
       }
     });
+    displayRefresh();
     gameClock();
   }
 
-  function gameClock() {
+  function displayRefresh() {
     // ### Draw and refresh canvas ###
     window.requestAnimationFrame(() => {
       context.clearRect(0, 0, canvas.width, canvas.height);
@@ -57,11 +58,24 @@ window.onload = () => {
       this.obstacles.forEach(obstacle => {
         context.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
       });
-      gameClock();
-      checkBoundaries();
-      playerMove();
-      obstacleSpawn();
+      displayRefresh();
     });
+  }
+
+  function gameClock() {
+    // ### Cope with different display refresh rates ###
+    window.clockTimer = setInterval(() => {
+      runLogic();
+    }, 10); // 100 ups
+  }
+
+  function runLogic() {
+    // ### Run game logic ###
+    checkBoundaries();
+    playerMove();
+    obstacleSpawn();
+    moveObstacles();
+    collectGarbage();
   }
 
   // ###################################################
@@ -86,13 +100,29 @@ window.onload = () => {
 
   function obstacleSpawn() {
     // ### Spawn obstacles ###
-    if (Date.now() - this.player.obstacleTimer > 3000) {
-      const obstacle = new Obstacle();
-      // console.log(obstacle);
+    if (Date.now() - this.player.obstacleTimer > 1500) {
+      const obstacle = new Obstacle(Math.floor(Math.random() * 200 + 150));
       this.obstacles.push(obstacle);
       this.player.obstacleTimer = Date.now();
-      // console.log(obstacles);
     }
+  }
+
+  // #####################################
+  // ## Iteration 5: Move the obstacles ##
+  // #####################################
+
+  function moveObstacles() {
+    // ### Move obstacles ###
+    this.obstacles.forEach(obstacle => {
+      obstacle.y += 2;
+    });
+  }
+
+  function collectGarbage() {
+    // ### Remove obstacles that left canvas ###
+    this.obstacles.forEach((obstacle, index) => {
+      if (obstacle.y > canvas.height) this.obstacles.splice(index, 1);
+    });
   }
 };
 
@@ -104,8 +134,10 @@ class Player {
 
 // ### Obstacle class ###
 class Obstacle {
-  width = Math.floor(Math.random() * 200 + 150);
-  height = 20;
-  x = Math.floor(Math.random() * (canvas.width - this.width));
-  y = 0;
+  constructor(width) {
+    this.width = width;
+    this.height = 25;
+    this.x = Math.floor(Math.random() * (canvas.width - this.width));
+    this.y = 0;
+  }
 }
